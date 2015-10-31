@@ -1,7 +1,7 @@
 // title      : Watercolor Palette
 // author     : Michael S. Scherotter
 // license    : MIT License
-// revision   : 0.002
+// revision   : 0.003
 // tags       : 
 // file       : WatercolorPalette.jscad
 
@@ -69,15 +69,16 @@ function panArray(width, height, panWidth, panHeight){
 // generate the lid
 function generateLid(width, height, depth, pinSize, flangeLength){
 
-    var solid = color("white", cube({size:[width, height - 3, depth]})
-        .subtract(cube({size:[width - 6, height - 5 - 2, depth]}).translate([3,2,3]))
+    var solid = color("white", cube({size:[width, height-0.5, depth]})
+        .subtract(cube({size:[width - 6, height - 4 - 2, depth]}).translate([3,2,3]))
 		.subtract(panArray(width - 11, height - 12, 24.27, 15).translate([5,5,2]))
-    	.union(generateHinge(width, 5, 4, pinSize, false).translate([0,-1.5, 2 + depth / 2]))
-		.subtract(generateHinge(width, 5, 4, pinSize, true).translate([0, -1.5, 2 + depth / 2])))
+    	.union(generateHinge(width, 5, 4, pinSize, false).translate([0, 1.5, 2 + depth / 2]))
+		.subtract(generateHinge(width, 5, 4, pinSize, true).translate([0, 1.5, 2 + depth / 2])))
+        .subtract(cylinder({r: 0.01 + pinSize / 2, h: width}).rotateY(90).translate([0,1.5, 2 + depth / 2]))
         .subtract(endCapLatches(height, 0, depth, 4, flangeLength))
-	.translate([0, -height - 4, 0]);
+	.translate([0, -height - 6, 0]);
 
-	return solid.subtract(corners(width, height).translate([0, -height-7, 0]));
+	return solid.subtract(corners(width, height-0.5).translate([0, -height-6, 0]));
 }
 
 // Get the parameter definitions
@@ -95,9 +96,10 @@ function getParameterDefinitions() {
 // main function
 function main(params) {
     return generateBase(params.width, params.height, params.depth, 4, 4, 1, 7, params.pinDiameter, params.lidThickness, params.flangeLength)
-	.union(generateLid(params.width, params.height-1, params.lidThickness, params.pinDiameter, params.flangeLength))
+	.union(generateLid(params.width, params.height - 1, params.lidThickness, params.pinDiameter, params.flangeLength))
     .union(endCap(params.depth, params.height, params.lidThickness, params.flangeLength))
-    .translate([-50,0,0]);
+    .rotateZ(90)
+    .translate([20, -50, 0]);
 }
 
 // Generate the hinge
@@ -181,7 +183,8 @@ function endCap(depth, height, lidHeight, flangeLength) {
         .subtract(color("blue", cube({ size: [length, 20, depth] }).translate([2, height-22, 2])))
 
         .rotateY(-90)
-        .translate([-10, -height - 4, 0]);
+        .rotateZ(-90)
+        .translate([30, height + 8, 0]);
 
     return solid;
 }
