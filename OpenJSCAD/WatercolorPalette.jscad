@@ -25,8 +25,10 @@ function pans(palette, yOffset, colorPans, width, edge, minimumDivideWidth, panW
         }
     } while (dividerWidth < minimumDivideWidth);
 
+    var panHeight = 10;
+
     for (var i = 0; i < colorPans; i++) {
-        var pan = cube({ size: [panWidth, 19, 6.2] }).translate([xOffset, yOffset, baseDepth - 5]);
+        var pan = cube({ size: [panWidth, panDepth, panHeight] }).translate([xOffset, yOffset, baseDepth - 9]);
         xOffset += panWidth + dividerWidth;
         palette = palette.subtract(pan);
     }
@@ -82,16 +84,16 @@ function cornerSupports(width, depth) {
 }
 
 // generate the lid
-function generateLid(width, height, depth, pinSize, flangeLength) {
+function generateLid(width, height, depth, pinSize, flangeLength, hingeDiameter) {
 
     var solid = color("white", cube({ size: [width, height - 0.5, depth] })
-            .subtract(cube({ size: [width - 6, height - 4 - 2, depth] }).translate([3, 2, 5]))
-            .subtract(panArray(width - 11, height - 12, 24.27, 15).translate([5, 5, 4]))
-            .union(generateHinge(width, 5, 4, pinSize, false).translate([0, 1.5, 2 + depth / 2]))
-            .subtract(generateHinge(width, 5, 4, pinSize, true).translate([0, 1.5, 2 + depth / 2])))
-        .subtract(cylinder({ r: 0.01 + pinSize / 2, h: width }).rotateY(90).translate([0, 1.5, 2 + depth / 2]))
-        .subtract(endCapLatches(height, 0, depth, 4, flangeLength))
-        .subtract(generateBottomCorners(width, height));
+        .subtract(cube({ size: [width - 6, height - 4 - 2, depth] }).translate([3, 2, 5]))
+        .subtract(panArray(width - 11, height - 12, 24.27, 15).translate([5, 5, 4]))
+        .subtract(generateBottomCorners(width, height))
+        .union(generateHinge(width - 8, 5, hingeDiameter, pinSize, false).translate([4, 0.5, 2+ depth / 2]))
+        .subtract(generateHinge(width - 8, 5, hingeDiameter, pinSize, true).translate([4, 0.5, 2 + depth / 2])))
+        .subtract(cylinder({ r: 0.01 + pinSize / 2, h: width }).rotateY(90).translate([0, 0.5, 2 + depth / 2]))
+        .subtract(endCapLatches(height, 0, depth, 4, flangeLength));
 
     return solid.subtract(corners(width, height - 0.5))
         .union(cornerSupports(width, height))
@@ -105,15 +107,16 @@ function getParameterDefinitions() {
       { name: 'height', type: 'float', initial: 84, caption: "Height of the tray:" },
       { name: 'depth', type: 'float', initial: 17, caption: "Depth of the tray:" },
       { name: 'lidThickness', type: 'float', initial: 6, caption: "Lid thickness:" },
+      { name: "hingeDiameter", type: "float", initial: 6, caption: "Hinge diameter:"},
       { name: 'pinDiameter', type: 'float', initial: 2.5, caption: "Hinge pin diameter:" },
-      { name: 'flangeLength', type: 'float', initial: 8, caption: "Flange length:"}
+      { name: 'flangeLength', type: 'float', initial: 8, caption: "Flange length:" }
     ];
 }
 
 // main function
 function main(params) {
-    return generateBase(params.width, params.height, params.depth, 4, 4, 1, 7, params.pinDiameter, params.lidThickness, params.flangeLength)
-	.union(generateLid(params.width, params.height - 1, params.lidThickness, params.pinDiameter, params.flangeLength))
+    return generateBase(params.width, params.height, params.depth, 4, 4, 1, 7, params.pinDiameter, params.lidThickness, params.flangeLength, params.hingeDiameter)
+	.union(generateLid(params.width, params.height - 1, params.lidThickness, params.pinDiameter, params.flangeLength, params.hingeDiameter))
     .union(endCap(params.depth, params.height, params.lidThickness, params.flangeLength))
     .rotateZ(90)
     .translate([20, -50, 0]);
@@ -183,19 +186,19 @@ function endCapLatches(height, length, depth, lidHeight, flangeLength) {
 function endCap(depth, height, lidHeight, flangeLength) {
     var length = 14;
 
-    var solid = cube({ size: [length, height, depth + lidHeight + 4] }).translate([0, 0, -2])
-        .union(cube({ size: [length + flangeLength, height - 8, 2] }).translate([0, 4, depth + lidHeight]))
-        .union(endCapLatches(height - 8, length, depth, lidHeight, flangeLength))
-        .union(cube({ size: [length + flangeLength, height - 8, 2] }).translate([0, 4, -2]))
+    var solid = color("white", cube({ size: [length, height, depth + lidHeight + 5] })).translate([0, 0, -2])
+        .union(color("white", cube({ size: [length + flangeLength, height - 8, 2] }).translate([0, 4, depth + lidHeight + 1])))
+        .union(color("white", endCapLatches(height - 8, length, depth + 1, lidHeight, flangeLength)))
+        .union(color("white", cube({ size: [length + flangeLength, height - 8, 2] }).translate([0, 4, -2])))
         .subtract(brushes().translate([14, 0, 0]))
         .subtract(corners(20, height).translate([0, 0, 20]))
         .subtract(corner().rotateX(-90).translate([0, 4, 2]))
         .subtract(corner().translate([0, height - 4, 2]))
         .subtract(corner().rotateZ(90).translate([4, 0, 2]))
-        .subtract(corner().rotateX(180).translate([0, 4, depth + lidHeight - 2]))
-        .subtract(corner().rotateX(90).translate([0, height - 4, depth + lidHeight - 2]))
+        .subtract(corner().rotateX(180).translate([0, 4, depth + lidHeight - 1]))
+        .subtract(corner().rotateX(90).translate([0, height - 4, depth + lidHeight - 1]))
         .subtract(corner().rotateZ(90).translate([4, 0, 2]))
-        .subtract(corner().rotateZ(90).rotateY(90).translate([4, 0, depth + lidHeight - 2]))
+        .subtract(corner().rotateZ(90).rotateY(90).translate([4, 0, depth + lidHeight -1]))
         .subtract(color("blue", cube({size:[length, 12, depth]}).translate([2,2,2])))
         .subtract(color("blue", cube({ size: [length, 20, depth] }).translate([2, height-22, 2])))
 
@@ -219,14 +222,14 @@ function generateBottomCorners(width, depth) {
 
 // Generate the base of the palette
 function generateBase(width, depth, height, edge, panCount, dividerWidth, colorPans, pinSize,
-    lidHeight, flangeLength) {
+    lidHeight, flangeLength, hingeDiameter) {
     var palette = cube({ size: [width, depth, height] })
         .subtract(brushes());
 
     var panWidth = 15.7;
-    var panDepth = 18.5;
+    var panDepth =19;
     palette = pans(palette, 4, colorPans, width, edge, dividerWidth, panWidth, panDepth, height);
-    palette = pans(palette, depth - panDepth - edge - 2, colorPans, width, edge, dividerWidth, panWidth, panDepth, height);
+    palette = pans(palette, depth - panDepth - edge, colorPans, width, edge, dividerWidth, panWidth, panDepth, height);
 
     var panWidth = (width - (edge * 2) - (panCount - 1) * dividerWidth) / panCount; // 28.25;
     var offset = edge;
@@ -242,9 +245,12 @@ function generateBase(width, depth, height, edge, panCount, dividerWidth, colorP
 
     var mssLength = mss.getBounds()[1].x;
 
+    var hingeOffset = depth;
+
     return color("White", palette)
-        .union(generateHinge(width, 5, 4, pinSize, true).translate([0, depth - 2, height + 1]))
-        .subtract(generateHinge(width, 5, 4, pinSize, false).translate([0, depth - 2, height + 1]))
+        .union(generateHinge(width-8, 5, hingeDiameter, pinSize, true).translate([4, hingeOffset, height + 1]))
+        .subtract(generateHinge(width-8, 5, hingeDiameter, pinSize, false).translate([4, hingeOffset, height + 1]))
+        .subtract(color("Gray", cylinder({ r: 0.01 + pinSize / 2, h: width }).rotateY(90).translate([3, hingeOffset, height + 1])))
         .subtract(generateBottomCorners(width, depth))
         .union(mss.translate([width - mssLength - edge, 0.5, 5]))
         .subtract(endCapLatches(depth, 0, height, lidHeight, flangeLength))
