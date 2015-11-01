@@ -1,7 +1,7 @@
 // title      : Watercolor Palette
 // author     : Michael S. Scherotter
 // license    : MIT License
-// revision   : 0.003
+// revision   : 0.004
 // tags       : 
 // file       : WatercolorPalette.jscad
 
@@ -66,19 +66,36 @@ function panArray(width, height, panWidth, panHeight){
 	return solid;
 }
 
+function cornerSupport() {
+    return color("blue", cylinder({ r:5, h:1}).translate([0,0,0]));
+}
+
+function cornerSupports(width, depth) {
+    var supports = [];
+
+    supports.push(cornerSupport());
+    supports.push(cornerSupport().translate([width, 0]));
+    supports.push(cornerSupport().translate([width, depth]));
+    supports.push(cornerSupport().translate([0, depth]));
+
+    return union(supports);
+}
+
 // generate the lid
-function generateLid(width, height, depth, pinSize, flangeLength){
+function generateLid(width, height, depth, pinSize, flangeLength) {
 
-    var solid = color("white", cube({size:[width, height-0.5, depth]})
-        .subtract(cube({size:[width - 6, height - 4 - 2, depth]}).translate([3,2,3]))
-		.subtract(panArray(width - 11, height - 12, 24.27, 15).translate([5,5,2]))
-    	.union(generateHinge(width, 5, 4, pinSize, false).translate([0, 1.5, 2 + depth / 2]))
-		.subtract(generateHinge(width, 5, 4, pinSize, true).translate([0, 1.5, 2 + depth / 2])))
-        .subtract(cylinder({r: 0.01 + pinSize / 2, h: width}).rotateY(90).translate([0,1.5, 2 + depth / 2]))
+    var solid = color("white", cube({ size: [width, height - 0.5, depth] })
+            .subtract(cube({ size: [width - 6, height - 4 - 2, depth] }).translate([3, 2, 5]))
+            .subtract(panArray(width - 11, height - 12, 24.27, 15).translate([5, 5, 4]))
+            .union(generateHinge(width, 5, 4, pinSize, false).translate([0, 1.5, 2 + depth / 2]))
+            .subtract(generateHinge(width, 5, 4, pinSize, true).translate([0, 1.5, 2 + depth / 2])))
+        .subtract(cylinder({ r: 0.01 + pinSize / 2, h: width }).rotateY(90).translate([0, 1.5, 2 + depth / 2]))
         .subtract(endCapLatches(height, 0, depth, 4, flangeLength))
-	.translate([0, -height - 6, 0]);
+        .subtract(generateBottomCorners(width, height));
 
-	return solid.subtract(corners(width, height-0.5).translate([0, -height-6, 0]));
+    return solid.subtract(corners(width, height - 0.5))
+        .union(cornerSupports(width, height))
+        .translate([0, -height - 12, 0]);
 }
 
 // Get the parameter definitions
@@ -189,6 +206,17 @@ function endCap(depth, height, lidHeight, flangeLength) {
     return solid;
 }
 
+function generateBottomCorners(width, depth) {
+    var solid = [];
+
+    solid.push(corner().rotateX(-90).translate([0, 4, 4]));
+    solid.push(corner().translate([0, depth - 4, 4]));
+    solid.push(corner().rotateZ(90).translate([4, 0, 4]));
+    solid.push(corner().rotateZ(-90).translate([width - 4, depth, 4]));
+
+    return union(solid);
+}
+
 // Generate the base of the palette
 function generateBase(width, depth, height, edge, panCount, dividerWidth, colorPans, pinSize,
     lidHeight, flangeLength) {
@@ -214,15 +242,12 @@ function generateBase(width, depth, height, edge, panCount, dividerWidth, colorP
 
     var mssLength = mss.getBounds()[1].x;
 
-    var model = color("White", palette)
+    return color("White", palette)
         .union(generateHinge(width, 5, 4, pinSize, true).translate([0, depth - 2, height + 1]))
         .subtract(generateHinge(width, 5, 4, pinSize, false).translate([0, depth - 2, height + 1]))
-        .subtract(corner().rotateX(-90).translate([0, 4, 4]))
-        .subtract(corner().translate([0, depth - 4, 4]))
-        .subtract(corner().rotateZ(90).translate([4, 0, 4]))
-        .subtract(corner().rotateZ(-90).translate([width - 4, depth, 4]))
+        .subtract(generateBottomCorners(width, depth))
         .union(mss.translate([width - mssLength - edge, 0.5, 5]))
-        .subtract(endCapLatches(depth, 0, height, lidHeight, flangeLength));
-
-	return model.subtract(corners(width, depth));
+        .subtract(endCapLatches(depth, 0, height, lidHeight, flangeLength))
+        .subtract(corners(width, depth))
+        .union(cornerSupports(width, depth));
 }
