@@ -1,20 +1,23 @@
 // title      : Watercolor Palette
 // author     : Michael S. Scherotter
 // license    : MIT License
-// revision   : 0.004
+// revision   : 0.005
 // tags       : 
 // file       : WatercolorPalette.jscad
 
 // Generate a quarter-round used to radius the edges (4mm radius)
-function corner() {
-    return color("white", cube({ size: [4, 4, 140] })
+function corner(height) {
+    if (!height) {
+        height = 140;
+    }
+    return color("white", cube({ size: [4, 4, height] })
      .translate([0, 0, 0])
-     .subtract(cylinder({ r: 4, h: 140 }))
+     .subtract(cylinder({ r: 4, h: height }))
      .rotateY(90));
 }
 
 ///create the pans to fit the half-pan watercolors
-function pans(palette, yOffset, colorPans, width, edge, minimumDivideWidth, panWidth, panDepth, baseDepth) {
+function pans(yOffset, colorPans, width, edge, minimumDivideWidth, panWidth, panDepth, baseDepth) {
     var xOffset = edge;
 
     var dividerWidth;
@@ -27,13 +30,15 @@ function pans(palette, yOffset, colorPans, width, edge, minimumDivideWidth, panW
 
     var panHeight = 10;
 
+    var solid = [];
+
     for (var i = 0; i < colorPans; i++) {
         var pan = cube({ size: [panWidth, panDepth, panHeight] }).translate([xOffset, yOffset, baseDepth - 9]);
         xOffset += panWidth + dividerWidth;
-        palette = palette.subtract(pan);
+        solid.push(pan);
     }
 
-    return palette;
+    return union(solid);
 }
 
 // create the vertical corners 
@@ -119,11 +124,19 @@ function getParameterDefinitions() {
 
 // main function
 function main(params) {
-    return generateBase(params.width, params.height, params.depth, 4, 4, 1, 7, params.pinDiameter, params.lidThickness, params.flangeLength, params.hingeDiameter, params)
-	.union(generateLid(params.width, params.height - 1, params.lidThickness, params.pinDiameter, params.flangeLength, params.hingeDiameter, params))
-    .union(endCap(params.depth, params.height, params.lidThickness, params.flangeLength))
-    .rotateZ(90)
-    .translate([20, -50, 0]);
+    var parts = [];
+
+    parts.push(generateBase(params.width, params.height, params.depth, 4, 4, 1, 7, params.pinDiameter,
+        params.lidThickness, params.flangeLength, params.hingeDiameter, params));
+
+    parts.push(generateLid(params.width, params.height - 1, params.lidThickness,
+        params.pinDiameter, params.flangeLength, params.hingeDiameter, params));
+
+    parts.push(endCap(params.depth, params.height, params.lidThickness, params.flangeLength));
+
+    return union(parts)
+        .rotateZ(90)
+        .translate([20, -50, 0]);
 }
 
 // Generate the hinge
@@ -194,6 +207,8 @@ function endCap(depth, height, lidHeight, flangeLength) {
         .union(color("white", cube({ size: [length + flangeLength, height - 8, 2] }).translate([0, 4, depth + lidHeight + 1])))
         .union(color("white", endCapLatches(height - 8, length, depth + 1, lidHeight, flangeLength)))
         .union(color("white", cube({ size: [length + flangeLength, height - 8, 2] }).translate([0, 4, -2])))
+        .union(corner(height - 8).rotateZ(90).translate([length + 4, 4, 4]))
+        .union(corner(height - 8).rotateZ(90).rotateX(180).translate([length + 4, height-4, depth+lidHeight-3]))
         .subtract(brushes().translate([14, 0, 0]))
         .subtract(corners(20, height).translate([0, 0, 20]))
         .subtract(corner().rotateX(-90).translate([0, 4, 2]))
@@ -202,13 +217,12 @@ function endCap(depth, height, lidHeight, flangeLength) {
         .subtract(corner().rotateX(180).translate([0, 4, depth + lidHeight - 1]))
         .subtract(corner().rotateX(90).translate([0, height - 4, depth + lidHeight - 1]))
         .subtract(corner().rotateZ(90).translate([4, 0, 2]))
-        .subtract(corner().rotateZ(90).rotateY(90).translate([4, 0, depth + lidHeight -1]))
-        .subtract(color("blue", cube({size:[length, 12, depth]}).translate([2,2,2])))
-        .subtract(color("blue", cube({ size: [length, 20, depth] }).translate([2, height-22, 2])))
-
-        .rotateY(-90)
-        .rotateZ(-90)
-        .translate([30, height + 8, 0]);
+        .subtract(corner().rotateZ(90).rotateY(90).translate([4, 0, depth + lidHeight - 1]))
+        .subtract(color("blue", cube({ size: [length, 12, depth-2] }).translate([2, 2, 4])))
+        .subtract(color("blue", cube({ size: [length, 20, depth-2] }).translate([2, height - 22, 4])));
+        //.rotateY(-90)
+        //.rotateZ(-90)
+        //.translate([30, height + 8, 0]);
 
     return solid;
 }
@@ -227,15 +241,15 @@ function generateBottomCorners(width, depth) {
 // Generate the base of the palette
 function generateBase(width, depth, height, edge, panCount, dividerWidth, colorPans, pinSize,
     lidHeight, flangeLength, hingeDiameter, params) {
-    var palette = cube({ size: [width, depth, height] })
-        .subtract(brushes());
-
     var panWidth = 15.7;
     var panDepth =19;
-    palette = pans(palette, 4, colorPans, width, edge, dividerWidth, panWidth, panDepth, height);
-    palette = pans(palette, depth - panDepth - edge, colorPans, width, edge, dividerWidth, panWidth, panDepth, height);
+    var palette = cube({ size: [width, depth, height] })
+        .subtract(brushes())
+        .subtract(pans(4, colorPans, width, edge, dividerWidth, panWidth, panDepth, height))
+        .subtract(pans(depth - panDepth - edge, colorPans, width, edge, dividerWidth, panWidth, panDepth, height));
 
     var panWidth = (width - (edge * 2) - (panCount - 1) * dividerWidth) / panCount; // 28.25;
+
     var offset = edge;
     for (var i = 0; i < panCount; i++) {
         var largePan = cube({ size: [panWidth, depth - (panDepth * 2) - (edge * 4), 7] })
