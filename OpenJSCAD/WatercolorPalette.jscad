@@ -220,11 +220,11 @@ function endCap(depth, height, lidHeight, flangeLength) {
         .subtract(corner().rotateZ(90).rotateY(90).translate([4, 0, depth + lidHeight - 1]))
         .subtract(color("blue", cube({ size: [length, 12, depth-2] }).translate([2, 2, 4])))
         .subtract(color("blue", cube({ size: [length, 20, depth-2] }).translate([2, height - 22, 4])));
-        //.rotateY(-90)
-        //.rotateZ(-90)
-        //.translate([30, height + 8, 0]);
 
-    return solid;
+    return solid.rotateY(-90)
+        .rotateZ(-90)
+        .translate([30, height + 8, 0]);
+
 }
 
 function generateBottomCorners(width, depth) {
